@@ -41,5 +41,10 @@ public class Mana
         return Current;
     }
 
+    //Metodo para retornar a mana maxima
+    public int GetMax()
+    {
+        return Max;
+    }
 }
 

@@ -1,14 +1,32 @@
-using System;
 using System.Collections.Generic;
+using System.IO;
+using CardLang.lexer;
+using CardLang.parser;
 using UnityEngine;
 
 public class Test : MonoBehaviour
 {
+    [SerializeField] private string sourceCode;
     private void Start()
+    {
+        var parser = new Parser(new Lexer(new StringReader(sourceCode)));
+        var tree = parser.Parse();
+        
+        var analyzer = new SemanticAnalyzer();
+        var astCreator = new TreeAnalyzer();
+        
+        var result = analyzer.Analyze(tree);
+        var ast = astCreator.GetTreeString(tree);
+        
+        Debug.Log(ast);
+        Debug.Log(result);
+    }
+
+    public void Collatz(int initial)
     {
         var program = new List<IInstruction>
         {
-            new WriteInstruction("initial", 37),
+            new WriteInstruction("initial", initial),
             new CopyInstruction("initial", "x"),
             
             // Print

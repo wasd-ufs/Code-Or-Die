@@ -1,0 +1,116 @@
+Package CardLang;
+
+Helpers
+    digit = ['0'..'9'];
+    letter = ['A'..'Z'] | ['a'..'z'];
+
+Tokens
+    collect = 'collect' | 'Collect' | 'COLLECT';
+
+    if = 'if' | 'If' | 'IF';
+    else = 'else' | 'Else' | 'ELSE';
+    while = 'while' | 'While' | 'WHILE';
+    repeat = 'repeat' | 'Repeat' | 'REPEAT';
+    start = 'start' | 'Start' | 'START';
+    end = 'end' | 'End' | 'END';
+    return = 'return' | 'Return' | 'RETURN';
+    
+    damage = 'damage' | 'Damage' | 'DAMAGE';
+    heal = 'heal' | 'Heal' | 'HEAL';
+    pull = 'pull' | 'Pull' | 'PULL';
+    recharge = 'recharge' | 'Recharge' | 'RECHARGE';
+    run = 'run' | 'Run' | 'RUN';
+    insert = 'insert' | 'Insert' | 'INSERT';
+    stop = 'stop' | 'Stop' | 'STOP';
+    
+    random = 'random' | 'Random' | 'RANDOM';
+    
+    identifier = '<' letter (letter | digit)* '>';
+    name = letter (letter | '_' | digit)*;
+    
+    number = '[' digit+ ']';
+    plus = '+';
+    minus = '-';
+    times = '*';
+    div = '/';
+    mod = '%';
+    less_or_equal = '<=';
+    greater_or_equal = '>=';
+    equals = '=';
+    not_equals = '!=';
+    not = '!';
+    less = '<';
+    greater = '>';
+    
+    left_parentesis = '(';
+    right_parentesis = ')';
+    comma = ',';
+   
+    blank = (' ' | '\t' | '\n' | '\r')+;
+
+
+Ignored Tokens
+    blank;
+
+Productions
+    program {-> program} = {program} card* {-> New program.program([card.card])};
+
+    card {-> card} = {statement} collect identifier* scope {-> New card.statement([identifier], [scope.statement])} |
+           {return} collect identifier* return expression1 end {-> New card.return([identifier], expression1.expression)} |
+           {expression} expression1 {-> New card.expression(expression1.expression)} |
+           {stop} stop {-> New card.stop()};
+            
+    scope {-> statement*} = {scope} start statement* end {-> [statement.statement]};
+    
+    statement {-> statement} = {if} if expression1 scope {-> New statement.if(expression1.expression, [scope.statement])} |
+                {if_else} if expression1 [then]:scope else [otherwise]:scope {-> New statement.if_else(expression1.expression, [then.statement], [otherwise.statement])} |
+                {while} while expression1 scope {-> New statement.while(expression1.expression, [scope.statement])} |
+                {repeat} repeat expression1 scope {-> New statement.repeat(expression1.expression, [scope.statement])} |
+                {damage} damage expression1 {-> New statement.damage(expression1.expression)} |
+                {heal} heal expression1 {-> New statement.heal(expression1.expression)} |
+                {pull} pull expression1 {-> New statement.pull(expression1.expression)} |
+                {recharge} recharge expression1 {-> New statement.recharge(expression1.expression)} |
+                {run} run name {-> New statement.run(name)} |
+                {insert} insert identifier {-> New statement.insert(identifier)};
+                 
+    expression1 {-> expression} = {add} [left]:expression1 plus [right]:expression2 {-> New expression.add(left.expression, right.expression)} |
+                  {sub} [left]:expression1 minus [right]:expression2 {-> New expression.sub(left.expression, right.expression)} |
+                  {expression2} expression2 {-> expression2.expression};
+                  
+    expression2 {-> expression} = {mul} [left]:expression2 times [right]:expression3 {-> New expression.mul(left.expression, right.expression)} |
+                  {div} [left]:expression2 div [right]:expression3 {-> New expression.div(left.expression, right.expression)} |
+                  {mod} [left]:expression2 mod [right]:expression3 {-> New expression.mod(left.expression, right.expression)} |
+                  {expression3} expression3 {-> expression3.expression};
+                  
+    expression3 {-> expression} = {number} number {-> New expression.number(number)} |
+                  {identifier} identifier {-> New expression.identifier(identifier)} | 
+                  {random} random [min]:expression3 [max]:expression3 {-> New expression.random(min.expression, max.expression)} |
+                  {wrapped} left_parentesis [expr]:expression1 right_parentesis {-> expr.expression};
+
+Abstract Syntax Tree
+    program = {program} card*;
+
+    card = {statement} identifier* statement* |
+           {return} identifier* expression |
+           {stop} |
+           {expression} expression;
+
+    statement = {if} [condition]:expression [then]:statement* |
+                {if_else} [condition]:expression [then]:statement* [else]:statement* |
+                {while} [condition]:expression [do]:statement* |
+                {repeat} [times]:expression [do]:statement* |
+                {damage} [amount]:expression |
+                {heal} [amount]:expression |
+                {pull} [amount]:expression |
+                {recharge} [amount]:expression |
+                {run} [name]:name |
+                {insert} [name]:identifier;
+
+    expression = {add} [left]:expression [right]:expression |
+                 {sub} [left]:expression [right]:expression |
+                 {mul} [left]:expression [right]:expression |
+                 {div} [left]:expression [right]:expression |
+                 {mod} [left]:expression [right]:expression |
+                 {random} [min]:expression [max]:expression |
+                 {number} [value]:number |
+                 {identifier} [name]:identifier;

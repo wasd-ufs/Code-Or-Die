@@ -1,0 +1,141 @@
+Package CardLang;
+
+Helpers
+    digit = ['0'..'9'];
+    letter = ['A'..'Z'] | ['a'..'z'];
+    non_newline = [' ' .. '~'] + '\t';
+
+Tokens
+    collect = 'collect';
+    run = 'run';
+
+    if = 'if';
+    else = 'else';
+    while = 'while';
+    repeat = 'repeat';
+    start = 'start';
+    call = 'call';
+    pull = 'game.';
+    end = 'end';
+    insert = 'insert';
+    return = 'return';
+    random = 'random';
+
+    close_stack = 'close_stack';
+    identifier = letter (letter | '_' | digit)*;
+
+    number_type = 'number';
+    card_type = 'card';
+
+    number = digit+;
+    indefinite = '...';
+    left_bracket = '[';
+    right_bracket = ']';
+    plus = '+';
+    minus = '-';
+    times = '*';
+    div = '/';
+    mod = '%';
+    less_or_equal = '<=';
+    greater_or_equal = '>=';
+    equals = '=';
+    not_equals = '!=';
+    not = '!';
+    less = '<';
+    greater = '>';
+    colon = ':';
+
+    left_parentesis = '(';
+    right_parentesis = ')';
+    comma = ',';
+
+    blank = (' ' | '\t' | '\n' | '\r')+;
+    comment = '#' non_newline*;
+
+
+Ignored Tokens
+    blank, comment;
+
+Productions
+    program {-> program} = {program} card* {-> New program.program([card.card])};
+
+    card {-> card} = {collect_statement} collect declaration* run scope {-> New card.statement([declaration], [scope.statement])} |
+           {statement} run scope {-> New card.statement([], [scope.statement])} |
+           {collect_expression} collect identifier* return start expression1 end {-> New card.expression([identifier], expression1.expression)} |
+           {expression} return start expression1 end {-> New card.expression([], expression1.expression)} |
+           {close_stack} close_stack {-> New card.close_stack()};
+
+    declaration {-> declaration} = {expression} identifier colon number_type {-> New declaration.expression(identifier)} |
+                   {preset_statement} identifier colon card_type left_bracket number right_bracket {-> New declaration.preset_statement(identifier, number)} |
+                   {indefinite_statement} identifier colon card_type left_bracket indefinite right_bracket {-> New declaration.indefinite_statement(identifier)};
+
+    scope {-> statement*} = {scope} start statement* end {-> [statement.statement]};
+
+    statement {-> statement} = {if} if expression1 scope {-> New statement.if(expression1.expression, [scope.statement])} |
+                {if_else} if expression1 [then]:scope else [otherwise]:scope {-> New statement.if_else(expression1.expression, [then.statement], [otherwise.statement])} |
+                {while} while expression1 scope {-> New statement.while(expression1.expression, [scope.statement])} |
+                {repeat} repeat expression1 scope {-> New statement.repeat(expression1.expression, [scope.statement])} |
+                {insert} left_bracket [name]:identifier right_bracket {-> New statement.insert(name)} |
+                {call} [name]:identifier left_parentesis [args]:arg_list right_parentesis {-> New statement.call(name, [args.expression])};
+
+    arg_list {-> expression*} = {empty} {-> []} |
+                {single} expression1 {-> [expression1.expression]} |
+                {multiple} expression1 comma arg_list {-> [expression1.expression, arg_list.expression]};
+
+    expression1 {-> expression} =
+                  {greater}          [left]:expression2 greater [right]:expression2          {-> New expression.greater(left.expression, right.expression)} |
+                  {less}             [left]:expression2 less [right]:expression2             {-> New expression.less(left.expression, right.expression)} |
+                  {greater_or_equal} [left]:expression2 greater_or_equal [right]:expression2 {-> New expression.greater_or_equal(left.expression, right.expression)} |
+                  {less_or_equal}    [left]:expression2 less_or_equal [right]:expression2    {-> New expression.less_or_equal(left.expression, right.expression)} |
+                  {equals}           [left]:expression2 equals [right]:expression2           {-> New expression.equals(left.expression, right.expression)} |
+                  {not_equals}       [left]:expression2 not_equals [right]:expression2       {-> New expression.not_equals(left.expression, right.expression)} |
+                  {expression2}      expression2                                              {-> expression2.expression};
+
+    expression2 {-> expression} = {add} [left]:expression2 plus [right]:expression3 {-> New expression.add(left.expression, right.expression)} |
+                  {sub} [left]:expression2 minus [right]:expression3 {-> New expression.sub(left.expression, right.expression)} |
+                  {expression3} expression3 {-> expression3.expression};
+
+    expression3 {-> expression} = {mul} [left]:expression3 times [right]:expression4 {-> New expression.mul(left.expression, right.expression)} |
+                  {div} [left]:expression3 div [right]:expression4 {-> New expression.div(left.expression, right.expression)} |
+                  {mod} [left]:expression3 mod [right]:expression4 {-> New expression.mod(left.expression, right.expression)} |
+                  {expression4} expression4 {-> expression4.expression};
+
+    expression4 {-> expression} = {number} number {-> New expression.number(number)} |
+                  {identifier} identifier {-> New expression.identifier(identifier)} |
+                  {random} random [min]:expression4 [max]:expression4 {-> New expression.random(min.expression, max.expression)} |
+                  {pull} pull [name]:identifier {-> New expression.pull(name)} |
+                  {wrapped} left_parentesis [expr]:expression1 right_parentesis {-> expr.expression};
+
+Abstract Syntax Tree
+    program = {program} card*;
+
+    card = {statement} declaration* statement* |
+           {expression} identifier* expression |
+           {close_stack};
+
+    declaration = {expression} [name]:identifier |
+                   {preset_statement} [name]:identifier [number]:number |
+                   {indefinite_statement} [name]:identifier;
+
+    statement = {if} [condition]:expression [then]:statement* |
+                {if_else} [condition]:expression [then]:statement* [else]:statement* |
+                {while} [condition]:expression [do]:statement* |
+                {repeat} [times]:expression [do]:statement* |
+                {insert} [name]:identifier |
+                {call} [name]:identifier [args]:expression*;
+
+    expression = {add} [left]:expression [right]:expression |
+                 {sub} [left]:expression [right]:expression |
+                 {mul} [left]:expression [right]:expression |
+                 {div} [left]:expression [right]:expression |
+                 {mod} [left]:expression [right]:expression |
+                 {greater} [left]:expression [right]:expression |
+                 {less} [left]:expression [right]:expression |
+                 {greater_or_equal} [left]:expression [right]:expression |
+                 {less_or_equal} [left]:expression [right]:expression |
+                 {equals} [left]:expression [right]:expression |
+                 {not_equals} [left]:expression [right]:expression |
+                 {random} [min]:expression [max]:expression |
+                 {pull} [name]:identifier |
+                 {number} [value]:number |
+                 {identifier} [name]:identifier;

@@ -241,6 +241,27 @@
     "com.unity.splines": {
       "version": "2.8.2",
       "depth": 0,
+<<<<<<< Updated upstream
+=======
+      "source": "registry",
+      "dependencies": {
+        "com.unity.mathematics": "1.2.1",
+        "com.unity.modules.imgui": "1.0.0",
+        "com.unity.settings-manager": "1.0.3"
+      },
+      "url": "https://packages.unity.com"
+    },
+    "com.unity.sysroot": {
+      "version": "2.0.10",
+      "depth": 1,
+      "source": "registry",
+      "dependencies": {},
+      "url": "https://packages.unity.com"
+    },
+    "com.unity.sysroot.linux-x86_64": {
+      "version": "2.0.9",
+      "depth": 1,
+>>>>>>> Stashed changes
       "source": "registry",
       "dependencies": {
         "com.unity.mathematics": "1.2.1",
